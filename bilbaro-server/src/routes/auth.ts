@@ -2,6 +2,7 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User'
+import authMiddleware, { AuthRequest } from '../middleware/auth';
 
 
 const router = express.Router()
@@ -10,37 +11,37 @@ const router = express.Router()
 
 router.post('/register', async (req, res) => {
 
-    try {
+  try {
 
-        const { name, email, password } = req.body;
+    const { name, email, password } = req.body;
 
-        // check if user exists
-        const existingUser = await User.findOne({ email })
-        if (existingUser) {
-            return res.status(400).json({ message: "Email already registered" })
-        }
-
-        // hash password
-        const hashedPassword = await bcrypt.hash(password, 12)
-
-        // create user
-        const user = await User.create({
-            name, email, password: hashedPassword
-        })
-
-        // create jwt
-        const token = jwt.sign(
-            {userId: user._id , role: user.role},
-            process.env.JWT_SECRET!,
-            {expiresIn:'7d'}
-        )
-
-        res.status(201).json({token, user:{id:user._id , name:user.name , email:user.email}})
-
-
-    } catch (error) {
-        res.status(500).json({message:'Server Error'})
+    // check if user exists
+    const existingUser = await User.findOne({ email })
+    if (existingUser) {
+      return res.status(400).json({ message: "Email already registered" })
     }
+
+    // hash password
+    const hashedPassword = await bcrypt.hash(password, 12)
+
+    // create user
+    const user = await User.create({
+      name, email, password: hashedPassword
+    })
+
+    // create jwt
+    const token = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_SECRET!,
+      { expiresIn: '7d' }
+    )
+
+    res.status(201).json({ token, user: { id: user._id, name: user.name, email: user.email } })
+
+
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error' })
+  }
 })
 
 // LOGIN
@@ -70,6 +71,16 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ message: 'Server error' })
   }
 })
- 
+
+// get current loggedin user
+router.get('/me', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const user = await User.findById(req.user?.userId).select('-password')
+    res.json(user)
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' })
+  }
+
+})
 
 export default router 
