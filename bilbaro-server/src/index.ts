@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from "./routes/auth"
+import eventRoutes from './routes/events'
 
 
 
@@ -21,6 +22,9 @@ app.get('/',(req,res)=>{
 })
 
 app.use('/api/auth', authRoutes)
+app.use('/api/events', eventRoutes)
+
+
 mongoose.connect(process.env.MONGO_URI!)
     .then(()=>{
         console.log('monogoose connected')
